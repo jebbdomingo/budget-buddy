@@ -1,0 +1,11 @@
+name = "budget-buddy"
+main = "src/index.ts"
+compatibility_date = "2024-03-20"
+compatibility_flags = ["nodejs_compat"]
+
+# Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
+# Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#d1-databases
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "budget-buddy"
+database_id = "65f6ff1d-a2cd-49c1-b588-ff90ac3d47b5"
