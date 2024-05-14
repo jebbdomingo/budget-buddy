@@ -10,8 +10,8 @@
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { AllocationModel, BudgetModel, SnapshotModel, TransactionModel } from './model'
-import { Repository, Budget, BudgetAllocation } from './repository'
+import { AccountModel, BudgetModel, SnapshotModel, TransactionModel } from './model'
+import { Repository, Budget, Account } from './repository'
 import { Env } from './bindings'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -72,6 +72,17 @@ app.post('api/budgets', async c => {
 	}
 })
 
+app.get('api/accounts', async c => {
+	try {
+		const repo = new Repository(new AccountModel(c.env.DB))
+		const accounts = await repo.getAccounts()
+		
+		return c.json({ accounts: accounts, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.post('api/fund_allocation', async c => {	
 	const { budget_id, account_id, amount, budget_month } = await c.req.json()
 
@@ -89,7 +100,7 @@ app.post('api/fund_allocation', async c => {
 	}
 })
 
-app.get('api/snapshots/:budget_month', async c => {
+app.get('api/snapshots/month/:budget_month', async c => {
 	const budget_month: string = c.req.param('budget_month') 
 
 	try {
@@ -97,6 +108,19 @@ app.get('api/snapshots/:budget_month', async c => {
 		const snapshots = await repo.getSnapshotsBy(budget_month)
 		
 		return c.json({ snapshots: snapshots, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
+app.get('api/snapshots/generate', async c => {
+	// const budget_month: string = c.req.param('budget_month') 
+
+	try {
+		const repo = new Repository(new SnapshotModel(c.env.DB))
+		const result = await repo.generateBudgetSnapshots()
+		
+		return c.json({ result: result, ok: true })
 	} catch (e) {
 		return c.json({err: e}, 500)
 	}

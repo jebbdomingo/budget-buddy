@@ -21,14 +21,13 @@ DROP TABLE IF EXISTS accounts;
 CREATE TABLE IF NOT EXISTS accounts (
   account_id integer PRIMARY KEY AUTOINCREMENT,
   title text NOT NULL,
-  balance decimal(10, 2) NOT NULL,
   date_created date,
   date_modified date
 );
 CREATE INDEX idx_accounts_title ON accounts (title);
 
-INSERT INTO accounts (title, balance, date_created, date_modified) VALUES ('Cash on hand', 2000, DATE('now'), DATE('now'));
-INSERT INTO accounts (title, balance, date_created, date_modified) VALUES ('Cash in bank', 5000, DATE('now'), DATE('now'));
+INSERT INTO accounts (title, date_created, date_modified) VALUES ('Cash on hand', DATE('now'), DATE('now'));
+INSERT INTO accounts (title, date_created, date_modified) VALUES ('Cash in bank', DATE('now'), DATE('now'));
 
 -- Transactions table
 
@@ -41,16 +40,22 @@ CREATE TABLE IF NOT EXISTS transactions (
   credit decimal(10, 2) NOT NULL,
   budget_month text NOT NULL,
   date_created date,
+  payee text NULL,
+  memo text NULL,
   FOREIGN KEY(budget_id) REFERENCES budgets(budget_id),
   FOREIGN KEY(account_id) REFERENCES accounts(account_id)
 );
 
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 500, 0, '2-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 500, 0, '3-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 0, 100, '4-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 1, 1000, 0, '4-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 2, 800, 0, '4-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 1, 200, 0, '4-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 500, 0, '1-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 500, 0, '1-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 0, 200, '1-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 200, 0, '2-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 800, 0, '3-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 200, 0, '4-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 100, 0, '6-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 1, 0, 400, '1-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 1, 100, 0, '2-2024', DATE('now'));
+
 
 -- Budget snapshots table
 
@@ -64,6 +69,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
   date_created date,
   date_modified date
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_snapshots_budget_id ON snapshots(budget_id, budget_month);
 
 -- INSERT INTO snapshots (budget_id, account_id, budget_month, assigned, available, date_created, date_modified) VALUES (2, 2, '4/2024', 1000, 900, DATE('now'), DATE('now'));
 

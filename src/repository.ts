@@ -1,7 +1,13 @@
 export type Budget = {
 	budget_id: number
 	title: string
-	balance: number
+	date_created: Date
+	date_modified: Date
+}
+
+export type Account = {
+	account_id: number
+	title: string
 	date_created: Date
 	date_modified: Date
 }
@@ -39,12 +45,17 @@ export class Repository {
         return this.model.findAll();
     }
     
+    
     public getBudget(id: number): Promise<Budget | null> {
         return this.model.find(id);
     }
     
     public createBudget(budget: Budget): Promise<Budget | false> {
         return this.model.create(budget);
+    }
+
+    public getAccounts(): Promise<Account[]> {
+        return this.model.findAll();
     }
     
     public fundAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<boolean> {
@@ -53,5 +64,9 @@ export class Repository {
 
     public getSnapshotsBy(budget_month: string): Promise<Snapshot[]> {
         return this.model.findBy(budget_month);
+    }
+    
+    public generateBudgetSnapshots(): Promise<any[]> {
+        return this.model.generateBudgetSnapshots();
     }
 }

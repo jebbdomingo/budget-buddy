@@ -1,4 +1,4 @@
-import { Model, Budget, Snapshot, Transaction } from './repository'
+import { Model, Budget, Snapshot, Account } from './repository'
 
 export class BudgetModel implements Model {
     constructor(private db: D1Database) {}
@@ -8,8 +8,7 @@ export class BudgetModel implements Model {
 
         try {
             const { results } = await this.db.prepare(`
-                SELECT b.*, s.balance AS "assigned", s.month_year FROM budgets AS b
-                    INNER JOIN snapshots AS s ON s.budget_id = b.budget_id
+                SELECT * FROM budgets
             `)
                 .all<Budget>()
     
@@ -46,6 +45,27 @@ export class BudgetModel implements Model {
         } else {
             return false
         }
+    }
+}
+
+export class AccountModel implements Model {
+    constructor(private db: D1Database) {}
+
+    async findAll(): Promise<Account[]> {
+        let result: Account[] = []
+
+        try {
+            const { results } = await this.db.prepare(`
+                SELECT * FROM accounts
+            `)
+                .all<Account>()
+    
+            result = results
+        } catch (e) {
+            console.log(e)
+        }
+
+        return result
     }
 }
 
@@ -89,6 +109,71 @@ export class SnapshotModel implements Model {
 
         return result
     }
+    
+    /**
+     * Generate snapshots for each budget
+     * empty budget on specific month will default to the last running balance (`available`)
+     * @param budget_month 
+     * @returns 
+     */
+    async generateBudgetSnapshots(): Promise<any[]> {
+        let result: any[] = [];
+
+        const budgetModel = new BudgetModel(this.db)
+        const budgets = await budgetModel.findAll()
+        const snapshots = await this.findAll();
+        
+        const dates = ['1-2024','2-2024','3-2024','4-2024','5-2024','6-2024','7-2024']
+
+        // Fetch all transaction endings for each budget
+        const endings = {}
+        snapshots.forEach(data => {
+            endings[data.title] = {
+                budget_month: data.budget_month,
+                assigned: data.assigned,
+                available: data.available
+            }
+        });
+
+        // Build the budget snapshots data structure
+        const data = {}
+        dates.forEach(month => {
+            let oBudgets = {}
+
+            budgets.forEach(budget => {
+                let snaps = {}
+
+                snapshots.forEach(snapshot => {
+                    if (budget.budget_id == snapshot.budget_id && month == snapshot.budget_month) {
+                        snaps = {
+                            assigned: snapshot.assigned,
+                            available: snapshot.available
+                        }
+                    }
+                })
+                
+                if (Object.keys(snaps).length) {
+                    oBudgets[budget.title] = snaps
+                } else {
+                    if (endings[budget.title]) {
+                        oBudgets[budget.title] = endings[budget.title]
+                    } else {
+                        oBudgets[budget.title] = {}
+                    }
+                }
+            })
+            
+            data[month] = oBudgets
+        })
+
+        result = data
+
+        // console.log('=== BEGIN ===');
+        // console.log(result)
+        // console.log('=== END ===');
+
+        return result
+    }
 }
 
 export class TransactionModel implements Model {
@@ -117,26 +202,23 @@ export class TransactionModel implements Model {
                 .run()
 
             if (success) {             
-                // e.g. 4/2024   
-                // const budget_month = new Intl.DateTimeFormat('en-EN', {
-                //     month: 'numeric',
-                //     year: 'numeric'
-                // }).format(date)
-
                 // Create budget snapshots
                 const { results } = await this.db.prepare(`
-                    SELECT t.budget_id, t.budget_month, SUM(t.debit) AS assigned,
-                        (SELECT SUM(SUM(debit - credit))
-                        OVER (PARTITION BY budget_id ORDER BY transaction_id)
-                        FROM transactions WHERE budget_id = t.budget_id GROUP BY budget_id) AS available
-                    FROM transactions AS t WHERE t.budget_month = ?
-                    GROUP BY t.budget_id
-                `)
-                    .bind(budget_month)
-                    .all()
+                    SELECT 
+                        transaction_id,
+                        budget_id,
+                        budget_month,
+                        SUM(debit) AS assigned,
+                        SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY transaction_id) AS available
+                    FROM
+                        transactions
+                    GROUP BY budget_month, budget_id ORDER BY budget_id
+                `).all()
 
-                
                 const stmts: D1PreparedStatement[] = []
+
+                // Container for last budgets in the iteration
+                const lastBudgets = {}
                 
                 results.forEach((snapshot) => {
                     const stmt = this.db.prepare(`
@@ -144,6 +226,12 @@ export class TransactionModel implements Model {
                     `).bind(snapshot.budget_id, snapshot.budget_month, snapshot.assigned, snapshot.available, now, now)
 
                     stmts.push(stmt)
+
+                    // lastBudgets[snapshot.budget_id] = {
+                    //     budget_month: snapshot.budget_month,
+                    //     assigned: snapshot.assigned,
+                    //     available: snapshot.available
+                    // }
                 })
 
                 await this.db.batch(stmts);
