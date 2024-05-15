@@ -117,11 +117,11 @@ export class SnapshotModel implements Model {
      * @returns 
      */
     async generateBudgetSnapshots(): Promise<any[]> {
-        let result: any[] = [];
+        let result: any[] = []
 
         const budgetModel = new BudgetModel(this.db)
         const budgets = await budgetModel.findAll()
-        const snapshots = await this.findAll();
+        const snapshots = await this.findAll()
         
         const dates = ['1-2024','2-2024','3-2024','4-2024','5-2024','6-2024','7-2024']
 
@@ -209,7 +209,7 @@ export class TransactionModel implements Model {
                         budget_id,
                         budget_month,
                         SUM(debit) AS assigned,
-                        SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY transaction_id) AS available
+                        SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
                     FROM
                         transactions
                     GROUP BY budget_month, budget_id ORDER BY budget_id

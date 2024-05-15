@@ -113,6 +113,17 @@ app.get('api/snapshots/month/:budget_month', async c => {
 	}
 })
 
+app.get('api/snapshots', async c => {
+	try {
+		const repo = new Repository(new SnapshotModel(c.env.DB))
+		const snapshots = await repo.getSnapshots()
+		
+		return c.json({ snapshots: snapshots, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.get('api/snapshots/generate', async c => {
 	// const budget_month: string = c.req.param('budget_month') 
 

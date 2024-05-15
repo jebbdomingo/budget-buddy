@@ -62,6 +62,10 @@ export class Repository {
         return this.model.createBudgetAllocation(budget_id, account_id, amount, budget_month);
     }
 
+    public getSnapshots(): Promise<Snapshot[]> {
+        return this.model.findAll();
+    }
+    
     public getSnapshotsBy(budget_month: string): Promise<Snapshot[]> {
         return this.model.findBy(budget_month);
     }
