@@ -1,6 +1,6 @@
-import { Model, Budget, Snapshot, Account } from './repository'
+import { Budget, Account, BudgetBalance, TransactionModelInterface, AccountModelInterface, BudgetModelInterface } from './repository'
 
-export class BudgetModel implements Model {
+export class BudgetModel implements BudgetModelInterface {
     constructor(private db: D1Database) {}
 
     async findAll(): Promise<Budget[]> {
@@ -46,9 +46,38 @@ export class BudgetModel implements Model {
             return false
         }
     }
+
+    /**
+     * Get the budgets with balances
+     * 
+     * @returns array
+     */
+    async fetchBudgetsBalances(): Promise<BudgetBalance[]> {
+        let result: BudgetBalance[] = []
+
+        try {
+            const { results } = await this.db.prepare(`
+                SELECT 
+                    transaction_id,
+                    budget_id,
+                    budget_month,
+                    SUM(debit) AS assigned,
+                    SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
+                FROM
+                    transactions
+                GROUP BY budget_month, budget_id ORDER BY budget_id
+            `).all<BudgetBalance>()
+
+            result = results
+        } catch (e) {
+            console.log(e)
+        }
+
+        return result
+    }
 }
 
-export class AccountModel implements Model {
+export class AccountModel implements AccountModelInterface {
     constructor(private db: D1Database) {}
 
     async findAll(): Promise<Account[]> {
@@ -72,43 +101,43 @@ export class AccountModel implements Model {
 export class SnapshotModel implements Model {
     constructor(private db: D1Database) {}
 
-    async findAll(): Promise<Snapshot[]> {
-        let result: Snapshot[] = [];
+    // async findAll(): Promise<Snapshot[]> {
+    //     let result: Snapshot[] = [];
 
-        try {
-            const { results } = await this.db.prepare(`
-                SELECT s.*, b.title FROM snapshots AS s
-                    INNER JOIN budgets AS b ON s.budget_id = b.budget_id
-            `)
-                .all<Snapshot>()
+    //     try {
+    //         const { results } = await this.db.prepare(`
+    //             SELECT s.*, b.title FROM snapshots AS s
+    //                 INNER JOIN budgets AS b ON s.budget_id = b.budget_id
+    //         `)
+    //             .all<Snapshot>()
     
-            result = results
-        } catch (e) {
-            console.log(e)
-        }
+    //         result = results
+    //     } catch (e) {
+    //         console.log(e)
+    //     }
 
-        return result
-    }
+    //     return result
+    // }
     
-    async findBy(budget_month): Promise<Snapshot[]> {
-        let result: Snapshot[] = [];
+    // async findBy(budget_month): Promise<Snapshot[]> {
+    //     let result: Snapshot[] = [];
 
-        try {
-            const { results } = await this.db.prepare(`
-                SELECT s.*, b.title FROM snapshots AS s
-                    INNER JOIN budgets AS b ON s.budget_id = b.budget_id
-                WHERE s.budget_month = ?
-            `)
-                .bind(budget_month)
-                .all<Snapshot>()
+    //     try {
+    //         const { results } = await this.db.prepare(`
+    //             SELECT s.*, b.title FROM snapshots AS s
+    //                 INNER JOIN budgets AS b ON s.budget_id = b.budget_id
+    //             WHERE s.budget_month = ?
+    //         `)
+    //             .bind(budget_month)
+    //             .all<Snapshot>()
     
-            result = results
-        } catch (e) {
-            console.log(e)
-        }
+    //         result = results
+    //     } catch (e) {
+    //         console.log(e)
+    //     }
 
-        return result
-    }
+    //     return result
+    // }
     
     /**
      * Generate snapshots for each budget
@@ -116,67 +145,63 @@ export class SnapshotModel implements Model {
      * @param budget_month 
      * @returns 
      */
-    async generateBudgetSnapshots(): Promise<any[]> {
-        let result: any[] = []
+    // async generateBudgetSnapshots(): Promise<any[]> {
+    //     let result: any[] = []
 
-        const budgetModel = new BudgetModel(this.db)
-        const budgets = await budgetModel.findAll()
-        const snapshots = await this.findAll()
+    //     const budgetModel = new BudgetModel(this.db)
+    //     const budgets = await budgetModel.findAll()
+    //     const snapshots = await this.findAll()
         
-        const dates = ['1-2024','2-2024','3-2024','4-2024','5-2024','6-2024','7-2024']
+    //     const dates = ['1-2024','2-2024','3-2024','4-2024','5-2024','6-2024','7-2024']
 
-        // Fetch all transaction endings for each budget
-        const endings = {}
-        snapshots.forEach(data => {
-            endings[data.title] = {
-                budget_month: data.budget_month,
-                assigned: data.assigned,
-                available: data.available
-            }
-        });
+    //     // Fetch all transaction endings for each budget
+    //     const endings = {}
+    //     snapshots.forEach(data => {
+    //         endings[data.title] = {
+    //             budget_month: data.budget_month,
+    //             assigned: data.assigned,
+    //             available: data.available
+    //         }
+    //     });
 
-        // Build the budget snapshots data structure
-        const data = {}
-        dates.forEach(month => {
-            let oBudgets = {}
+    //     // Build the budget snapshots data structure
+    //     const data = {}
+    //     dates.forEach(month => {
+    //         let oBudgets = {}
 
-            budgets.forEach(budget => {
-                let snaps = {}
+    //         budgets.forEach(budget => {
+    //             let snaps = {}
 
-                snapshots.forEach(snapshot => {
-                    if (budget.budget_id == snapshot.budget_id && month == snapshot.budget_month) {
-                        snaps = {
-                            assigned: snapshot.assigned,
-                            available: snapshot.available
-                        }
-                    }
-                })
+    //             snapshots.forEach(snapshot => {
+    //                 if (budget.budget_id == snapshot.budget_id && month == snapshot.budget_month) {
+    //                     snaps = {
+    //                         assigned: snapshot.assigned,
+    //                         available: snapshot.available
+    //                     }
+    //                 }
+    //             })
                 
-                if (Object.keys(snaps).length) {
-                    oBudgets[budget.title] = snaps
-                } else {
-                    if (endings[budget.title]) {
-                        oBudgets[budget.title] = endings[budget.title]
-                    } else {
-                        oBudgets[budget.title] = {}
-                    }
-                }
-            })
+    //             if (Object.keys(snaps).length) {
+    //                 oBudgets[budget.title] = snaps
+    //             } else {
+    //                 if (endings[budget.title]) {
+    //                     oBudgets[budget.title] = endings[budget.title]
+    //                 } else {
+    //                     oBudgets[budget.title] = {}
+    //                 }
+    //             }
+    //         })
             
-            data[month] = oBudgets
-        })
+    //         data[month] = oBudgets
+    //     })
 
-        result = data
+    //     result = data
 
-        // console.log('=== BEGIN ===');
-        // console.log(result)
-        // console.log('=== END ===');
-
-        return result
-    }
+    //     return result
+    // }
 }
 
-export class TransactionModel implements Model {
+export class TransactionModel implements TransactionModelInterface {
     constructor(private db: D1Database) {}
     
     /**
@@ -226,12 +251,6 @@ export class TransactionModel implements Model {
                     `).bind(snapshot.budget_id, snapshot.budget_month, snapshot.assigned, snapshot.available, now, now)
 
                     stmts.push(stmt)
-
-                    // lastBudgets[snapshot.budget_id] = {
-                    //     budget_month: snapshot.budget_month,
-                    //     assigned: snapshot.assigned,
-                    //     available: snapshot.available
-                    // }
                 })
 
                 await this.db.batch(stmts);

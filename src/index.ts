@@ -32,6 +32,17 @@ app.get('api/budgets', async c => {
 	}
 })
 
+app.get('api/budgetsbalances', async c => {
+	try {
+		const repo = new Repository(new BudgetModel(c.env.DB))
+		const results = await repo.getBudgetsBalances()
+		
+		return c.json({ ok: true, data: results })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.get('api/budgets/:id', async c => {
 	try {
 		const id: any = c.req.param('id') 

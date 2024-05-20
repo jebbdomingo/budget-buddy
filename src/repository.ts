@@ -5,6 +5,13 @@ export type Budget = {
 	date_modified: Date
 }
 
+export type BudgetBalance = {
+	budget_id: number
+	budget_month: string,
+    assigned: number
+    available: number
+}
+
 export type Account = {
 	account_id: number
 	title: string
@@ -30,11 +37,27 @@ export type Transaction = {
 	date_created: Date
 }
 
-export interface Model {
-    findAll(): Promise<Budget[] | Transaction[] | Snapshot[]>
-    findBy(): Promise<Budget[] | Transaction[] | Snapshot[]>
+export interface BaseModelInterface {
+    findAll(): Promise<any[]>
+    findBy(): Promise<any[] | null>
     find(id: any): Promise<any | null>
     create(entity: any): Promise<any | false>
+}
+
+export interface BudgetModelInterface extends BaseModelInterface {
+    findAll(): Promise<Budget[]>
+    find(id: any): Promise<Budget | null>
+    fetchBudgetsBalances(): Promise<BudgetBalance[]>
+}
+
+export interface AccountModelInterface extends BaseModelInterface {
+    findAll(): Promise<Account[]>
+    findBy(): Promise<Account[] | null>
+    find(id: any): Promise<Account | null>
+    create(entity: any): Promise<Account | false>
+}
+
+export interface TransactionModelInterface extends BaseModelInterface {
     createBudgetAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<number | boolean>
 }
 
@@ -45,6 +68,9 @@ export class Repository {
         return this.model.findAll();
     }
     
+    public getBudgetsBalances(): Promise<BudgetBalance[]> {
+        return this.model.fetchBudgetsBalances();
+    }
     
     public getBudget(id: number): Promise<Budget | null> {
         return this.model.find(id);
@@ -62,15 +88,15 @@ export class Repository {
         return this.model.createBudgetAllocation(budget_id, account_id, amount, budget_month);
     }
 
-    public getSnapshots(): Promise<Snapshot[]> {
-        return this.model.findAll();
-    }
+    // public getSnapshots(): Promise<Snapshot[]> {
+    //     return this.model.findAll();
+    // }
     
-    public getSnapshotsBy(budget_month: string): Promise<Snapshot[]> {
-        return this.model.findBy(budget_month);
-    }
+    // public getSnapshotsBy(budget_month: string): Promise<Snapshot[]> {
+    //     return this.model.findBy(budget_month);
+    // }
     
-    public generateBudgetSnapshots(): Promise<any[]> {
-        return this.model.generateBudgetSnapshots();
-    }
+    // public generateBudgetSnapshots(): Promise<any[]> {
+    //     return this.model.generateBudgetSnapshots();
+    // }
 }

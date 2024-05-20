@@ -14,6 +14,13 @@ CREATE INDEX idx_budgets_title ON budgets (title);
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Ready to Assign', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Savings', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Emergency Fund', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Stewardship', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Welfare Fund', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Medical', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Retirement', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Grocery', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Rent/Mortgage', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Transportation/Fuel', DATE('now'), DATE('now'));
 
 -- Accounts table
 
