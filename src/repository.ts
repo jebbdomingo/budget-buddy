@@ -84,6 +84,10 @@ export class Repository {
         return this.model.findAll();
     }
     
+    public getAccountBalances(): Promise<Account[]> {
+        return this.model.fetchAccountBalances();
+    }
+    
     public fundAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<boolean> {
         return this.model.createBudgetAllocation(budget_id, account_id, amount, budget_month);
     }

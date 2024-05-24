@@ -96,6 +96,32 @@ export class AccountModel implements AccountModelInterface {
 
         return result
     }
+    
+    async fetchAccountBalances(): Promise<Account[]> {
+        let result: Account[] = []
+
+        try {
+            const { results } = await this.db.prepare(`
+                SELECT 
+                    a.title,
+                    t.debit,
+                    t.credit,
+                    SUM(SUM(t.debit - t.credit)) OVER (PARTITION BY t.account_id ORDER BY t.transaction_id) AS balance
+                FROM
+                    transactions AS t
+                LEFT JOIN
+                    accounts AS a ON a.account_id = t.account_id
+                GROUP BY t.account_id
+            `)
+                .all<Account>()
+    
+            result = results
+        } catch (e) {
+            console.log(e)
+        }
+
+        return result
+    }
 }
 
 export class SnapshotModel implements Model {
@@ -226,39 +252,7 @@ export class TransactionModel implements TransactionModelInterface {
                 .bind(budget_id, account_id, amount, '0', budget_month, now)
                 .run()
 
-            if (success) {             
-                // Create budget snapshots
-                const { results } = await this.db.prepare(`
-                    SELECT 
-                        transaction_id,
-                        budget_id,
-                        budget_month,
-                        SUM(debit) AS assigned,
-                        SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
-                    FROM
-                        transactions
-                    GROUP BY budget_month, budget_id ORDER BY budget_id
-                `).all()
-
-                const stmts: D1PreparedStatement[] = []
-
-                // Container for last budgets in the iteration
-                const lastBudgets = {}
-                
-                results.forEach((snapshot) => {
-                    const stmt = this.db.prepare(`
-                        INSERT INTO snapshots (budget_id, budget_month, assigned, available, date_created, date_modified) VALUES (?, ?, ?, ?, ?, ?)
-                    `).bind(snapshot.budget_id, snapshot.budget_month, snapshot.assigned, snapshot.available, now, now)
-
-                    stmts.push(stmt)
-                })
-
-                await this.db.batch(stmts);
-
-                return true
-            } else {
-                return false
-            }
+            return success
         } catch (e) {
             console.log(e)
         }

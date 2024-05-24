@@ -94,6 +94,17 @@ app.get('api/accounts', async c => {
 	}
 })
 
+app.get('api/accountbalances', async c => {
+	try {
+		const repo = new Repository(new AccountModel(c.env.DB))
+		const accounts = await repo.getAccountBalances()
+		
+		return c.json({ accounts: accounts, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.post('api/fund_allocation', async c => {	
 	const { budget_id, account_id, amount, budget_month } = await c.req.json()
 
