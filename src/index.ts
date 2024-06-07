@@ -45,7 +45,7 @@ app.get('api/budgetsbalances', async c => {
 
 app.get('api/budgets/:id', async c => {
 	try {
-		const id: any = c.req.param('id') 
+		const id: any = c.req.param('id')
 		const repo = new Repository(new BudgetModel(c.env.DB))
 		const budget = await repo.getBudget(id);
 
@@ -83,6 +83,54 @@ app.post('api/budgets', async c => {
 	}
 })
 
+app.post('api/accounts', async c => {	
+	const { title } = await c.req.json()
+
+	if (!title) return c.text("Missing title for new account")
+
+	try {
+		const account: Account = {
+			account_id: 0,
+			title: title
+		}
+		
+		const repo = new Repository(new AccountModel(c.env.DB))
+		const result = await repo.createBudget(account)
+
+		if (!result) {
+			return c.json({ ok: false, error: "Something went wrong" }, 422)
+		}
+		
+		return c.json({ ok: true, account: result }, 201)
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
+app.patch('api/accounts', async c => {	
+	const { account_id, title } = await c.req.json()
+
+	if (!title) return c.text("Missing title for new account")
+
+	try {
+		const account: Account = {
+			account_id: account_id,
+			title: title
+		}
+		
+		const repo = new Repository(new AccountModel(c.env.DB))
+		const result = await repo.updateAccount(account)
+
+		if (!result) {
+			return c.json({ ok: false, error: "Something went wrong" }, 422)
+		}
+		
+		return c.json({ ok: true, account: result }, 201)
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.get('api/accounts', async c => {
 	try {
 		const repo = new Repository(new AccountModel(c.env.DB))
@@ -105,7 +153,20 @@ app.get('api/accountbalances', async c => {
 	}
 })
 
-app.post('api/fund_allocation', async c => {	
+app.get('api/transactions/filter/:type/:id', async c => {
+	try {
+        const type: any = c.req.param('type')
+        const id: any = c.req.param('id')
+		const repo = new Repository(new TransactionModel(c.env.DB))
+		const result = await repo.getTransactionsByType(type, id)
+		
+		return c.json({ transactions: result, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
+app.post('api/fund_allocation', async c => {
 	const { budget_id, account_id, amount, budget_month } = await c.req.json()
 
 	try {		
@@ -122,42 +183,42 @@ app.post('api/fund_allocation', async c => {
 	}
 })
 
-app.get('api/snapshots/month/:budget_month', async c => {
-	const budget_month: string = c.req.param('budget_month') 
+// app.get('api/snapshots/month/:budget_month', async c => {
+// 	const budget_month: string = c.req.param('budget_month') 
 
-	try {
-		const repo = new Repository(new SnapshotModel(c.env.DB))
-		const snapshots = await repo.getSnapshotsBy(budget_month)
+// 	try {
+// 		const repo = new Repository(new SnapshotModel(c.env.DB))
+// 		const snapshots = await repo.getSnapshotsBy(budget_month)
 		
-		return c.json({ snapshots: snapshots, ok: true })
-	} catch (e) {
-		return c.json({err: e}, 500)
-	}
-})
+// 		return c.json({ snapshots: snapshots, ok: true })
+// 	} catch (e) {
+// 		return c.json({err: e}, 500)
+// 	}
+// })
 
-app.get('api/snapshots', async c => {
-	try {
-		const repo = new Repository(new SnapshotModel(c.env.DB))
-		const snapshots = await repo.getSnapshots()
+// app.get('api/snapshots', async c => {
+// 	try {
+// 		const repo = new Repository(new SnapshotModel(c.env.DB))
+// 		const snapshots = await repo.getSnapshots()
 		
-		return c.json({ snapshots: snapshots, ok: true })
-	} catch (e) {
-		return c.json({err: e}, 500)
-	}
-})
+// 		return c.json({ snapshots: snapshots, ok: true })
+// 	} catch (e) {
+// 		return c.json({err: e}, 500)
+// 	}
+// })
 
-app.get('api/snapshots/generate', async c => {
-	// const budget_month: string = c.req.param('budget_month') 
+// app.get('api/snapshots/generate', async c => {
+// 	// const budget_month: string = c.req.param('budget_month') 
 
-	try {
-		const repo = new Repository(new SnapshotModel(c.env.DB))
-		const result = await repo.generateBudgetSnapshots()
+// 	try {
+// 		const repo = new Repository(new SnapshotModel(c.env.DB))
+// 		const result = await repo.generateBudgetSnapshots()
 		
-		return c.json({ result: result, ok: true })
-	} catch (e) {
-		return c.json({err: e}, 500)
-	}
-})
+// 		return c.json({ result: result, ok: true })
+// 	} catch (e) {
+// 		return c.json({err: e}, 500)
+// 	}
+// })
 
 // app.post('api/budget_allocations', async c => {	
 // 	const { budget_id, amount, month_allocation } = await c.req.json()

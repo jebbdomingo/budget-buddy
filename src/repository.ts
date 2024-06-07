@@ -42,6 +42,7 @@ export interface BaseModelInterface {
     findBy(): Promise<any[] | null>
     find(id: any): Promise<any | null>
     create(entity: any): Promise<any | false>
+    update(entity: any): Promise<any | false>
 }
 
 export interface BudgetModelInterface extends BaseModelInterface {
@@ -55,6 +56,7 @@ export interface AccountModelInterface extends BaseModelInterface {
     findBy(): Promise<Account[] | null>
     find(id: any): Promise<Account | null>
     create(entity: any): Promise<Account | false>
+    update(entity: any): Promise<Account | false>
 }
 
 export interface TransactionModelInterface extends BaseModelInterface {
@@ -79,6 +81,14 @@ export class Repository {
     public createBudget(budget: Budget): Promise<Budget | false> {
         return this.model.create(budget);
     }
+    
+    public createAccount(account: Account): Promise<Account | false> {
+        return this.model.create(account);
+    }
+    
+    public updateAccount(account: Account): Promise<Account | false> {
+        return this.model.update(account);
+    }
 
     public getAccounts(): Promise<Account[]> {
         return this.model.findAll();
@@ -86,6 +96,20 @@ export class Repository {
     
     public getAccountBalances(): Promise<Account[]> {
         return this.model.fetchAccountBalances();
+    }
+
+    public getTransactionsByType(type, id): Promise<Transaction[]> {
+        let filter
+
+        if (type == 'transaction') {
+            filter = { id: id }
+        } else if (type == 'budget') {
+            filter = { budget_id: id }
+        }  else if (type == 'account') {
+            filter = { account_id: id }
+        }
+
+        return this.model.findBy(filter);
     }
     
     public fundAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<boolean> {

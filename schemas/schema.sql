@@ -46,9 +46,10 @@ CREATE TABLE IF NOT EXISTS transactions (
   debit decimal(10, 2) NOT NULL,
   credit decimal(10, 2) NOT NULL,
   budget_month text NOT NULL,
-  date_created date,
   payee text NULL,
   memo text NULL,
+  date_created date,
+  date_modified date,
   FOREIGN KEY(budget_id) REFERENCES budgets(budget_id),
   FOREIGN KEY(account_id) REFERENCES accounts(account_id)
 );

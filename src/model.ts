@@ -1,4 +1,4 @@
-import { Budget, Account, BudgetBalance, TransactionModelInterface, AccountModelInterface, BudgetModelInterface } from './repository'
+import { Budget, Account, BudgetBalance, TransactionModelInterface, AccountModelInterface, BudgetModelInterface, Transaction } from './repository'
 
 export class BudgetModel implements BudgetModelInterface {
     constructor(private db: D1Database) {}
@@ -80,6 +80,43 @@ export class BudgetModel implements BudgetModelInterface {
 export class AccountModel implements AccountModelInterface {
     constructor(private db: D1Database) {}
 
+    async create(account: Account): Promise<Account | false> {
+        const now = new Date().toISOString()
+
+        const { success, meta } = await this.db.prepare(`
+            INSERT INTO accounts (title, date_created, date_modified) VALUES (?, ?, ?)
+        `)
+            .bind(account.title, now, now)
+            .run()
+
+        if (success) {
+            account.account_id = meta.last_row_id
+            return account
+        } else {
+            return false
+        }
+    }
+    
+    async update(account: Account): Promise<Account | false> {
+        const now = new Date().toISOString()
+
+        const { success, meta } = await this.db.prepare(`
+            UPDATE accounts SET title = ?, date_modified = ? WHERE account_id = ?
+        `)
+            .bind(account.title, now, account.account_id)
+            .run()
+
+        console.log(success)
+        console.log(meta)
+
+        if (success) {
+            account.account_id = meta.last_row_id
+            return account
+        } else {
+            return false
+        }
+    }
+
     async findAll(): Promise<Account[]> {
         let result: Account[] = []
 
@@ -103,9 +140,8 @@ export class AccountModel implements AccountModelInterface {
         try {
             const { results } = await this.db.prepare(`
                 SELECT 
+                    a.account_id,
                     a.title,
-                    t.debit,
-                    t.credit,
                     SUM(SUM(t.debit - t.credit)) OVER (PARTITION BY t.account_id ORDER BY t.transaction_id) AS balance
                 FROM
                     transactions AS t
@@ -229,6 +265,47 @@ export class SnapshotModel implements Model {
 
 export class TransactionModel implements TransactionModelInterface {
     constructor(private db: D1Database) {}
+
+    async find(id: number): Promise<Budget | null> {
+        const result = await this.db.prepare(`
+            SELECT * FROM transactions WHERE budget_id = ?
+        `)
+            .bind(id)
+            .first<Budget>()
+
+        return result
+    }
+    
+    async findBy(filter: { id: number, budget_id: number, account_id: number }): Promise<Transaction[]> {
+        try {
+            let stmt
+
+            if (filter.id) {
+                stmt = this.db.prepare(`
+                    SELECT * FROM transactions WHERE transaction_id = ?
+                `).bind(filter.id)
+            }
+            
+            if (filter.budget_id) {
+                stmt = this.db.prepare(`
+                    SELECT * FROM transactions WHERE budget_id = ?
+                `).bind(filter.budget_id)
+            }
+            
+            if (filter.account_id) {
+                stmt = this.db.prepare(`
+                    SELECT t.*, b.title FROM transactions AS t
+                    INNER JOIN budgets AS b ON b.budget_id = t.budget_id
+                    WHERE t.account_id = ?
+                `).bind(filter.account_id)
+            }
+
+            const { results } = await stmt.all<Transaction>()
+            return results
+        } catch (e) {
+            console.log(e)
+        }
+    }
     
     /**
      * Create a budget allocation
