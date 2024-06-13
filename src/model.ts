@@ -97,6 +97,30 @@ export class AccountModel implements AccountModelInterface {
         }
     }
     
+    async archive(id: number): Promise<number | false> {
+        let result
+
+        try {
+            const now = new Date().toISOString()
+    
+            const { meta } = await this.db.prepare(`
+                UPDATE accounts SET archived = ?, date_archived = ? WHERE account_id = ?
+            `)
+                .bind(1, now, id)
+                .run()
+
+            result = meta.last_row_id
+        } catch (e) {
+            console.error(e)
+        }
+
+        if (result) {
+            return result
+        } else {
+            return false
+        }
+    }
+    
     async update(account: Account): Promise<Account | false> {
         const now = new Date().toISOString()
 
@@ -105,9 +129,6 @@ export class AccountModel implements AccountModelInterface {
         `)
             .bind(account.title, now, account.account_id)
             .run()
-
-        console.log(success)
-        console.log(meta)
 
         if (success) {
             account.account_id = meta.last_row_id
@@ -122,7 +143,7 @@ export class AccountModel implements AccountModelInterface {
 
         try {
             const { results } = await this.db.prepare(`
-                SELECT * FROM accounts
+                SELECT * FROM accounts WHERE archived = 0
             `)
                 .all<Account>()
     
@@ -144,10 +165,12 @@ export class AccountModel implements AccountModelInterface {
                     a.title,
                     SUM(SUM(t.debit - t.credit)) OVER (PARTITION BY t.account_id ORDER BY t.transaction_id) AS balance
                 FROM
-                    transactions AS t
+                    accounts AS a 
                 LEFT JOIN
-                    accounts AS a ON a.account_id = t.account_id
-                GROUP BY t.account_id
+                    transactions AS t ON a.account_id = t.account_id
+                WHERE a.archived = 0
+                GROUP BY a.account_id
+                ORDER BY a.title ASC
             `)
                 .all<Account>()
     

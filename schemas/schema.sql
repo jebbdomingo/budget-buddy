@@ -28,8 +28,10 @@ DROP TABLE IF EXISTS accounts;
 CREATE TABLE IF NOT EXISTS accounts (
   account_id integer PRIMARY KEY AUTOINCREMENT,
   title text NOT NULL,
+  archived integer DEFAULT 0 NOT NULL,
   date_created date,
-  date_modified date
+  date_modified date,
+  date_archived date
 );
 CREATE INDEX idx_accounts_title ON accounts (title);
 

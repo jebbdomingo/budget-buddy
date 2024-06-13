@@ -89,6 +89,10 @@ export class Repository {
     public updateAccount(account: Account): Promise<Account | false> {
         return this.model.update(account);
     }
+    
+    public archiveAccount(id: number): Promise<number | false> {
+        return this.model.archive(id);
+    }
 
     public getAccounts(): Promise<Account[]> {
         return this.model.findAll();
