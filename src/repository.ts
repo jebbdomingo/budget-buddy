@@ -67,39 +67,43 @@ export class Repository {
     constructor(private model: Model) {}
 
     public getBudgets(): Promise<Budget[]> {
-        return this.model.findAll();
+        return this.model.findAll()
     }
     
     public getBudgetsBalances(): Promise<BudgetBalance[]> {
-        return this.model.fetchBudgetsBalances();
+        return this.model.fetchBudgetsBalances()
     }
     
     public getBudget(id: number): Promise<Budget | null> {
-        return this.model.find(id);
+        return this.model.find(id)
     }
     
     public createBudget(budget: Budget): Promise<Budget | false> {
-        return this.model.create(budget);
+        return this.model.create(budget)
+    }
+
+    public updateBudget(budget: Budget): Promise<Budget | false> {
+        return this.model.update(budget)
     }
     
     public createAccount(account: Account): Promise<Account | false> {
-        return this.model.create(account);
+        return this.model.create(account)
     }
     
     public updateAccount(account: Account): Promise<Account | false> {
-        return this.model.update(account);
+        return this.model.update(account)
     }
     
     public archiveAccount(id: number): Promise<number | false> {
-        return this.model.archive(id);
+        return this.model.archive(id)
     }
 
     public getAccounts(): Promise<Account[]> {
-        return this.model.findAll();
+        return this.model.findAll()
     }
     
     public getAccountBalances(): Promise<Account[]> {
-        return this.model.fetchAccountBalances();
+        return this.model.fetchAccountBalances()
     }
 
     public getTransactionsByType(type, id): Promise<Transaction[]> {

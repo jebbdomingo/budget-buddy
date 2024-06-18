@@ -83,6 +83,30 @@ app.post('api/budgets', async c => {
 	}
 })
 
+app.patch('api/budgets', async c => {	
+	const { budget_id, title } = await c.req.json()
+
+	if (!title) return c.text("Missing title for new account")
+
+	try {
+		const budget: Budget = {
+			budget_id: budget_id,
+			title: title
+		}
+		
+		const repo = new Repository(new BudgetModel(c.env.DB))
+		const result = await repo.updateBudget(budget)
+
+		if (!result) {
+			return c.json({ ok: false, error: "Something went wrong" }, 422)
+		}
+		
+		return c.json({ ok: true, budget: result }, 201)
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.get('api/accounts/archive/:account_id', async c => {
     const id: any = c.req.param('account_id')
 

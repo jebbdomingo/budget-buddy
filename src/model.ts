@@ -47,6 +47,23 @@ export class BudgetModel implements BudgetModelInterface {
         }
     }
 
+    async update(budget: Budget): Promise<Budget | false> {
+        const now = new Date().toISOString()
+
+        const { success, meta } = await this.db.prepare(`
+            UPDATE budgets SET title = ?, date_modified = ? WHERE budget_id = ?
+        `)
+            .bind(budget.title, now, budget.budget_id)
+            .run()
+
+        if (success) {
+            budget.budget_id = meta.last_row_id
+            return budget
+        } else {
+            return false
+        }
+    }
+
     /**
      * Get the budgets with balances
      * 
