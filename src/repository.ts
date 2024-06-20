@@ -85,6 +85,10 @@ export class Repository {
     public updateBudget(budget: Budget): Promise<Budget | false> {
         return this.model.update(budget)
     }
+
+    public archiveBudget(id: number): Promise<boolean> {
+        return this.model.archive(id)
+    }
     
     public createAccount(account: Account): Promise<Account | false> {
         return this.model.create(account)
@@ -94,7 +98,7 @@ export class Repository {
         return this.model.update(account)
     }
     
-    public archiveAccount(id: number): Promise<number | false> {
+    public archiveAccount(id: number): Promise<boolean> {
         return this.model.archive(id)
     }
 

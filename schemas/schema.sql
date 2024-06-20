@@ -6,8 +6,10 @@ DROP TABLE IF EXISTS budgets;
 CREATE TABLE IF NOT EXISTS budgets (
   budget_id integer PRIMARY KEY AUTOINCREMENT,
   title text NOT NULL,
+  archived integer DEFAULT 0 NOT NULL,
   date_created date,
-  date_modified date
+  date_modified date,
+  date_archived date
 );
 CREATE INDEX idx_budgets_title ON budgets (title);
 

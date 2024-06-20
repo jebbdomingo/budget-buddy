@@ -107,8 +107,25 @@ app.patch('api/budgets', async c => {
 	}
 })
 
-app.get('api/accounts/archive/:account_id', async c => {
-    const id: any = c.req.param('account_id')
+app.get('api/budgets/archive/:id', async c => {
+    const id: any = c.req.param('id')
+
+	try {
+		const repo = new Repository(new BudgetModel(c.env.DB))
+		const result = await repo.archiveBudget(id)
+
+		if (!result) {
+			return c.json({ ok: false, error: "Something went wrong" }, 422)
+		}
+		
+		return c.json({ ok: true }, 202)
+	} catch (e) {
+		return c.json({error: e}, 500)
+	}
+})
+
+app.get('api/accounts/archive/:id', async c => {
+    const id: any = c.req.param('id')
 
 	try {
 		const repo = new Repository(new AccountModel(c.env.DB))
@@ -118,7 +135,7 @@ app.get('api/accounts/archive/:account_id', async c => {
 			return c.json({ ok: false, error: "Something went wrong" }, 422)
 		}
 		
-		return c.json({ ok: true, account: result }, 201)
+		return c.json({ ok: true }, 201)
 	} catch (e) {
 		return c.json({error: e}, 500)
 	}

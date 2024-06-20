@@ -8,7 +8,7 @@ export class BudgetModel implements BudgetModelInterface {
 
         try {
             const { results } = await this.db.prepare(`
-                SELECT * FROM budgets
+                SELECT * FROM budgets WHERE archived = 0
             `)
                 .all<Budget>()
     
@@ -59,6 +59,30 @@ export class BudgetModel implements BudgetModelInterface {
         if (success) {
             budget.budget_id = meta.last_row_id
             return budget
+        } else {
+            return false
+        }
+    }
+
+    async archive(id: number): Promise<boolean> {
+        let result
+
+        try {
+            const now = new Date().toISOString()
+    
+            const { success } = await this.db.prepare(`
+                UPDATE budgets SET archived = ?, date_archived = ? WHERE budget_id = ?
+            `)
+                .bind(1, now, id)
+                .run()
+
+            result = success
+        } catch (e) {
+            console.error(e)
+        }
+
+        if (result) {
+            return result
         } else {
             return false
         }
@@ -120,13 +144,13 @@ export class AccountModel implements AccountModelInterface {
         try {
             const now = new Date().toISOString()
     
-            const { meta } = await this.db.prepare(`
+            const { success } = await this.db.prepare(`
                 UPDATE accounts SET archived = ?, date_archived = ? WHERE account_id = ?
             `)
                 .bind(1, now, id)
                 .run()
 
-            result = meta.last_row_id
+            result = success
         } catch (e) {
             console.error(e)
         }
