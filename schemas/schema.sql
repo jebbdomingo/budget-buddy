@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   budget_month text NOT NULL,
   payee text NULL,
   memo text NULL,
+  transaction_date date,
   date_created date,
   date_modified date,
   FOREIGN KEY(budget_id) REFERENCES budgets(budget_id),

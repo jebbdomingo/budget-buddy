@@ -138,7 +138,7 @@ export class AccountModel implements AccountModelInterface {
         }
     }
     
-    async archive(id: number): Promise<number | false> {
+    async archive(id: number): Promise<boolean> {
         let result
 
         try {
@@ -162,18 +162,25 @@ export class AccountModel implements AccountModelInterface {
         }
     }
     
-    async update(account: Account): Promise<Account | false> {
+    async update(account: Account): Promise<boolean> {
         const now = new Date().toISOString()
+        
+        let result
 
-        const { success, meta } = await this.db.prepare(`
-            UPDATE accounts SET title = ?, date_modified = ? WHERE account_id = ?
-        `)
-            .bind(account.title, now, account.account_id)
-            .run()
+        try {
+            const { success } = await this.db.prepare(`
+                UPDATE accounts SET title = ?, date_modified = ? WHERE account_id = ?
+            `)
+                .bind(account.title, now, account.account_id)
+                .run()
+    
+            result = success
+        } catch (e) {
+            console.error(e)
+        }
 
-        if (success) {
-            account.account_id = meta.last_row_id
-            return account
+        if (result) {
+            return result
         } else {
             return false
         }
@@ -330,12 +337,15 @@ export class SnapshotModel implements Model {
 export class TransactionModel implements TransactionModelInterface {
     constructor(private db: D1Database) {}
 
-    async find(id: number): Promise<Budget | null> {
+    async find(id: number): Promise<Transaction | null> {
         const result = await this.db.prepare(`
-            SELECT * FROM transactions WHERE budget_id = ?
+            SELECT t.*, b.title AS budget_title
+            FROM transactions AS t
+            LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
+            WHERE t.transaction_id = ?
         `)
             .bind(id)
-            .first<Budget>()
+            .first<Transaction>()
 
         return result
     }
@@ -358,9 +368,10 @@ export class TransactionModel implements TransactionModelInterface {
             
             if (filter.account_id) {
                 stmt = this.db.prepare(`
-                    SELECT t.*, b.title FROM transactions AS t
-                    INNER JOIN budgets AS b ON b.budget_id = t.budget_id
+                    SELECT t.*, b.title AS budget_title FROM transactions AS t
+                    LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
                     WHERE t.account_id = ?
+                    ORDER BY t.transaction_date DESC
                 `).bind(filter.account_id)
             }
 
@@ -375,25 +386,34 @@ export class TransactionModel implements TransactionModelInterface {
      * Create a budget allocation
      * allocation creates fresh budget snapshots
      * 
-     * @param budget_id 
-     * @param account_id 
-     * @param amount 
-     * @param budget_month 
-     * @returns boolean
+     * @param Transaction transaction
+     * @returns Transaction|boolean
      */
-    async createBudgetAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<number | boolean> {
+    async createBudgetAllocation(transaction: Transaction): Promise<Transaction | boolean> {
         const date = new Date()
         const now = date.toISOString()
+        let stmt
 
         try {
             // Create new transaction
-            const { success } = await this.db.prepare(`
-                INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (?, ?, ?, ?, ?, ?)
-            `)
-                .bind(budget_id, account_id, amount, '0', budget_month, now)
-                .run()
+            if (transaction.transaction_type == 'Outflow') {
+                stmt = this.db.prepare(`
+                    INSERT INTO transactions (budget_id, account_id, payee, debit, credit, budget_month, transaction_date, date_created, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(transaction.budget_id, transaction.account_id, transaction.payee, 0, transaction.amount, transaction.budget_month, transaction.transaction_date, now, transaction.memo)
+            } else {
+                stmt = this.db.prepare(`
+                    INSERT INTO transactions (budget_id, account_id, payee, debit, credit, budget_month, transaction_date, date_created, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(transaction.budget_id, transaction.account_id, transaction.payee, transaction.amount, 0, transaction.budget_month, transaction.transaction_date, now, transaction.memo)
+            }
 
-            return success
+            const { success, meta } = await stmt.run()
+
+            if (success) {
+                transaction.transaction_id = meta.last_row_id
+                return transaction
+            } else {
+                return false
+            }
         } catch (e) {
             console.log(e)
         }

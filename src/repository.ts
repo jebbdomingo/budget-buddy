@@ -30,11 +30,14 @@ export type Snapshot = {
 }
 
 export type Transaction = {
+    transaction_id: number
 	budget_id: number
 	account_id: number
 	debit: number
 	credit: number
 	date_created: Date
+    transaction_date: Date
+    memo: string
 }
 
 export interface BaseModelInterface {
@@ -60,7 +63,7 @@ export interface AccountModelInterface extends BaseModelInterface {
 }
 
 export interface TransactionModelInterface extends BaseModelInterface {
-    createBudgetAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<number | boolean>
+    createBudgetAllocation(transaction: Transaction): Promise<Transaction | boolean>
 }
 
 export class Repository {
@@ -123,9 +126,13 @@ export class Repository {
 
         return this.model.findBy(filter);
     }
+
+    public getTransaction(id: number): Promise<Transaction | null> {
+        return this.model.find(id)
+    }
     
-    public fundAllocation(budget_id: number, account_id: number, amount: number, budget_month: string): Promise<boolean> {
-        return this.model.createBudgetAllocation(budget_id, account_id, amount, budget_month);
+    public fundAllocation(transaction: Transaction): Promise<Transaction|false> {
+        return this.model.createBudgetAllocation(transaction);
     }
 
     // public getSnapshots(): Promise<Snapshot[]> {

@@ -11,7 +11,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { AccountModel, BudgetModel, SnapshotModel, TransactionModel } from './model'
-import { Repository, Budget, Account } from './repository'
+import { Repository, Budget, Account, Transaction } from './repository'
 import { Env } from './bindings'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -62,7 +62,7 @@ app.get('api/budgets/:id', async c => {
 app.post('api/budgets', async c => {	
 	const { title } = await c.req.json()
 
-	if (!title) return c.text("Missing title for new budget")
+	if (!title) return c.json({ ok: false, error: "Missing title for new budget" })
 
 	try {
 		const budget: Budget = {
@@ -211,6 +211,19 @@ app.get('api/accountbalances', async c => {
 	}
 })
 
+app.get('api/transactions/:id', async c => {
+	try {
+        const type: any = c.req.param('type')
+        const id: any = c.req.param('id')
+		const repo = new Repository(new TransactionModel(c.env.DB))
+		const result = await repo.getTransaction(id)
+		
+		return c.json({ transaction: result, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.get('api/transactions/filter/:type/:id', async c => {
 	try {
         const type: any = c.req.param('type')
@@ -225,15 +238,32 @@ app.get('api/transactions/filter/:type/:id', async c => {
 })
 
 app.post('api/fund_allocation', async c => {
-	const { budget_id, account_id, amount, budget_month } = await c.req.json()
+	const { budget_id, account_id, transaction_type, transaction_date, amount, budget_month, payee, memo } = await c.req.json()
+
+    const transaction: Transaction = {
+        budget_id: budget_id,
+        account_id: account_id,
+        transaction_type: transaction_type,
+        transaction_date: transaction_date,
+        amount: amount,
+        budget_month: budget_month,
+        payee: payee,
+        memo: memo
+    }
+
+    console.log(transaction)
 
 	try {		
 		const repo = new Repository(new TransactionModel(c.env.DB))
-		const result = await repo.fundAllocation(budget_id, account_id, amount, budget_month)
+		let result = await repo.fundAllocation(transaction)
 
 		if (!result) {
 			return c.json({ ok: false, error: "Something went wrong" }, 422)
-		}
+		} else {
+            console.log(result.transaction_id)
+            result = await repo.getTransaction(result.transaction_id)
+            console.log(result)
+        }
 		
 		return c.json({ ok: true, transaction: result }, 201)
 	} catch (e) {
