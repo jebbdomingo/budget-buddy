@@ -47,27 +47,29 @@ CREATE TABLE IF NOT EXISTS transactions (
   transaction_id integer PRIMARY KEY AUTOINCREMENT,
   budget_id integer,
   account_id integer,
-  debit decimal(10, 2) NOT NULL,
-  credit decimal(10, 2) NOT NULL,
+  debit decimal(10, 2) DEFAULT 0 NOT NULL,
+  credit decimal(10, 2) DEFAULT 0 NOT NULL,
   budget_month text NOT NULL,
   payee text NULL,
   memo text NULL,
+  archived integer DEFAULT 0 NOT NULL,
   transaction_date date,
   date_created date,
   date_modified date,
+  date_archived date,
   FOREIGN KEY(budget_id) REFERENCES budgets(budget_id),
   FOREIGN KEY(account_id) REFERENCES accounts(account_id)
 );
 
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 500, 0, '1-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 500, 0, '1-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 0, 200, '1-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 200, 0, '2-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 800, 0, '3-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 200, 0, '4-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (2, 1, 100, 0, '6-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 1, 0, 400, '1-2024', DATE('now'));
-INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created) VALUES (3, 1, 100, 0, '2-2024', DATE('now'));
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 500, 0, '1-2024', DATE('now'), '1/3/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 500, 0, '1-2024', DATE('now'), '1/5/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 0, 200, '1-2024', DATE('now'), '1/15/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 200, 0, '2-2024', DATE('now'), '2/20/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 800, 0, '3-2024', DATE('now'), '3/1/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 200, 0, '4-2024', DATE('now'), '4/22/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 100, 0, '6-2024', DATE('now'), '6/23/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (3, 1, 0, 400, '1-2024', DATE('now'), '1/31/2024');
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (3, 1, 100, 0, '2-2024', DATE('now'), '2/14/2024');
 
 
 -- Budget snapshots table

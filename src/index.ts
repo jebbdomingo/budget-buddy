@@ -153,7 +153,7 @@ app.post('api/accounts', async c => {
 		}
 		
 		const repo = new Repository(new AccountModel(c.env.DB))
-		const result = await repo.createBudget(account)
+		const result = await repo.createAccount(account)
 
 		if (!result) {
 			return c.json({ ok: false, error: "Something went wrong" }, 422)
@@ -237,6 +237,17 @@ app.get('api/transactions/filter/:type/:id', async c => {
 	}
 })
 
+app.get('api/transactions', async c => {
+	try {
+		const repo = new Repository(new TransactionModel(c.env.DB))
+		const result = await repo.getTransactions()
+		
+		return c.json({ transactions: result, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
 app.post('api/fund_allocation', async c => {
 	const { budget_id, account_id, transaction_type, transaction_date, amount, budget_month, payee, memo } = await c.req.json()
 
@@ -251,7 +262,36 @@ app.post('api/fund_allocation', async c => {
         memo: memo
     }
 
-    console.log(transaction)
+	try {		
+		const repo = new Repository(new TransactionModel(c.env.DB))
+		let result = await repo.fundAllocation(transaction)
+
+		if (!result) {
+			return c.json({ ok: false, error: "Something went wrong" }, 422)
+		} else {
+            result = await repo.getTransaction(result.transaction_id)
+        }
+		
+		return c.json({ ok: true, transaction: result }, 201)
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
+app.patch('api/fund_allocation', async c => {
+	const { transaction_id, budget_id, account_id, transaction_type, transaction_date, amount, budget_month, payee, memo } = await c.req.json()
+
+    const transaction: Transaction = {
+        transaction_id: transaction_id,
+        budget_id: budget_id,
+        account_id: account_id,
+        transaction_type: transaction_type,
+        transaction_date: transaction_date,
+        amount: amount,
+        budget_month: budget_month,
+        payee: payee,
+        memo: memo
+    }
 
 	try {		
 		const repo = new Repository(new TransactionModel(c.env.DB))
@@ -260,9 +300,7 @@ app.post('api/fund_allocation', async c => {
 		if (!result) {
 			return c.json({ ok: false, error: "Something went wrong" }, 422)
 		} else {
-            console.log(result.transaction_id)
             result = await repo.getTransaction(result.transaction_id)
-            console.log(result)
         }
 		
 		return c.json({ ok: true, transaction: result }, 201)

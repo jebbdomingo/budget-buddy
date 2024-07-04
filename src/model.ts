@@ -381,9 +381,26 @@ export class TransactionModel implements TransactionModelInterface {
             console.log(e)
         }
     }
+
+    async findAll(): Promise<Transaction[]> {
+        let result: Transaction[] = []
+
+        try {
+            const { results } = await this.db.prepare(`
+                SELECT * FROM transactions WHERE archived = 0
+            `)
+                .all<Transaction>()
+    
+            result = results
+        } catch (e) {
+            console.log(e)
+        }
+
+        return result
+    }
     
     /**
-     * Create a budget allocation
+     * Create or update a budget allocation
      * allocation creates fresh budget snapshots
      * 
      * @param Transaction transaction
@@ -391,25 +408,45 @@ export class TransactionModel implements TransactionModelInterface {
      */
     async createBudgetAllocation(transaction: Transaction): Promise<Transaction | boolean> {
         const date = new Date()
-        const now = date.toISOString()
+        const now = date.toLocaleDateString("en-US")
         let stmt
 
+        const isUpdate = transaction.transaction_id ? true : false
+
         try {
-            // Create new transaction
-            if (transaction.transaction_type == 'Outflow') {
-                stmt = this.db.prepare(`
-                    INSERT INTO transactions (budget_id, account_id, payee, debit, credit, budget_month, transaction_date, date_created, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).bind(transaction.budget_id, transaction.account_id, transaction.payee, 0, transaction.amount, transaction.budget_month, transaction.transaction_date, now, transaction.memo)
-            } else {
-                stmt = this.db.prepare(`
-                    INSERT INTO transactions (budget_id, account_id, payee, debit, credit, budget_month, transaction_date, date_created, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `).bind(transaction.budget_id, transaction.account_id, transaction.payee, transaction.amount, 0, transaction.budget_month, transaction.transaction_date, now, transaction.memo)
+            switch (transaction.transaction_type) {
+                case 'Outflow':
+                    if (isUpdate) {
+                        stmt = this.db.prepare(`
+                            UPDATE transactions SET budget_id = ?, account_id = ?, payee = ?, debit = 0, credit = ?, budget_month = ?, transaction_date = ?, date_modified = ?, memo = ? WHERE transaction_id = ?
+                        `).bind(transaction.budget_id, transaction.account_id, transaction.payee, transaction.amount, transaction.budget_month, transaction.transaction_date, now, transaction.memo, transaction.transaction_id)
+                    } else {
+                        stmt = this.db.prepare(`
+                            INSERT INTO transactions (budget_id, account_id, payee, credit, budget_month, transaction_date, date_created, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        `).bind(transaction.budget_id, transaction.account_id, transaction.payee, transaction.amount, transaction.budget_month, transaction.transaction_date, now, transaction.memo)
+                    }
+                break
+
+                case 'Inflow':
+                    if (isUpdate) {
+                        stmt = this.db.prepare(`
+                            UPDATE transactions SET budget_id = ?, account_id = ?, payee = ?, debit = ?, credit = 0, budget_month = ?, transaction_date = ?, date_modified = ?, memo = ? WHERE transaction_id = ?
+                        `).bind(transaction.budget_id, transaction.account_id, transaction.payee, transaction.amount, transaction.budget_month, transaction.transaction_date, now, transaction.memo, transaction.transaction_id)
+                    } else {
+                        stmt = this.db.prepare(`
+                            INSERT INTO transactions (budget_id, account_id, payee, debit, budget_month, transaction_date, date_created, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        `).bind(transaction.budget_id, transaction.account_id, transaction.payee, transaction.amount, transaction.budget_month, transaction.transaction_date, now, transaction.memo)
+                    }
+                break
             }
 
             const { success, meta } = await stmt.run()
 
             if (success) {
-                transaction.transaction_id = meta.last_row_id
+                if (!isUpdate) {
+                    transaction.transaction_id = meta.last_row_id
+                }
+
                 return transaction
             } else {
                 return false

@@ -130,6 +130,10 @@ export class Repository {
     public getTransaction(id: number): Promise<Transaction | null> {
         return this.model.find(id)
     }
+
+    public getTransactions(): Promise<Transaction[]> {
+        return this.model.findAll()
+    }
     
     public fundAllocation(transaction: Transaction): Promise<Transaction|false> {
         return this.model.createBudgetAllocation(transaction);
