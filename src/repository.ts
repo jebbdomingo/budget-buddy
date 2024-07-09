@@ -5,6 +5,15 @@ export type Budget = {
 	date_modified: Date
 }
 
+export type Allocation = {
+    allocation_id: number
+	budget_id: number
+	budget_month: string
+	amount: number
+	date_created: Date
+	date_modified: Date
+}
+
 export type BudgetBalance = {
 	budget_id: number
 	budget_month: string,
@@ -52,6 +61,11 @@ export interface BudgetModelInterface extends BaseModelInterface {
     findAll(): Promise<Budget[]>
     find(id: any): Promise<Budget | null>
     fetchBudgetsBalances(): Promise<BudgetBalance[]>
+}
+
+export interface AllocationModelInterface extends BaseModelInterface {
+    findAll(): Promise<Budget[]>
+    find(id: any): Promise<Budget | null>
 }
 
 export interface AccountModelInterface extends BaseModelInterface {
@@ -111,6 +125,10 @@ export class Repository {
     
     public getAccountBalances(): Promise<Account[]> {
         return this.model.fetchAccountBalances()
+    }
+
+    public getAllocations(): Promise<Allocation[]> {
+        return this.model.findAll()
     }
 
     public getTransactionsByType(type, id): Promise<Transaction[]> {

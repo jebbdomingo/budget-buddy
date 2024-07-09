@@ -1,4 +1,4 @@
-import { Budget, Account, BudgetBalance, TransactionModelInterface, AccountModelInterface, BudgetModelInterface, Transaction } from './repository'
+import { Budget, Account, BudgetBalance, TransactionModelInterface, AccountModelInterface, BudgetModelInterface, AllocationModelInterface, Transaction, Allocation } from './repository'
 
 export class BudgetModel implements BudgetModelInterface {
     constructor(private db: D1Database) {}
@@ -102,7 +102,7 @@ export class BudgetModel implements BudgetModelInterface {
                     transaction_id,
                     budget_id,
                     budget_month,
-                    SUM(debit) AS assigned,
+                    (SELECT a.amount FROM allocations AS a WHERE a.budget_id = transactions.budget_id AND a.budget_month = budget_month) AS assigned,
                     SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
                 FROM
                     transactions
@@ -118,13 +118,75 @@ export class BudgetModel implements BudgetModelInterface {
     }
 }
 
+export class AllocationModel implements AllocationModelInterface {
+    constructor(private db: D1Database) {}
+
+    async findAll(): Promise<Allocation[]> {
+        let result: Budget[] = []
+
+        try {
+            const { results } = await this.db.prepare(`
+                SELECT * FROM allocations
+            `)
+                .all<Allocation>()
+    
+            result = results
+        } catch (e) {
+            console.log(e)
+        }
+
+        return result
+    }
+    
+    async create(allocation: Allocation): Promise<Allocation | false> {
+        const now = new Date().toISOString()
+
+        const { success, meta } = await this.db.prepare(`
+            INSERT INTO allocations (budget_id, budget_month, amount date_created, date_modified) VALUES (?, ?, ?, ?)
+        `)
+            .bind(allocation.budget_id, allocation.budget_month, allocation.amount, now)
+            .run()
+
+        if (success) {
+            allocation.allocation_id = meta.last_row_id
+            return allocation
+        } else {
+            return false
+        }
+    }
+
+    async update(allocation: Allocation): Promise<boolean> {
+        const now = new Date().toISOString()
+
+        let result
+
+        try {
+            const { success } = await this.db.prepare(`
+                UPDATE allocations SET budget_id = ?, budget_month, amount, date_modified = ? WHERE allocation_id = ?
+            `)
+                .bind(allocation.budget_id, allocation.budget_month, allocation.amount, now, allocation.allocation_id)
+                .run()
+            
+            result = success
+        } catch (e) {
+            console.error(e)
+        }
+
+        if (result) {
+            return result
+        } else {
+            return false
+        }
+    }
+}
+
 export class AccountModel implements AccountModelInterface {
     constructor(private db: D1Database) {}
 
     async create(account: Account): Promise<Account | false> {
         const now = new Date().toISOString()
 
-        const { success, meta } = await this.db.prepare(`
+        const { success } = await this.db.prepare(`
             INSERT INTO accounts (title, date_created, date_modified) VALUES (?, ?, ?)
         `)
             .bind(account.title, now, now)

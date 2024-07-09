@@ -10,7 +10,7 @@
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { AccountModel, BudgetModel, SnapshotModel, TransactionModel } from './model'
+import { AccountModel, AllocationModel, BudgetModel, SnapshotModel, TransactionModel } from './model'
 import { Repository, Budget, Account, Transaction } from './repository'
 import { Env } from './bindings'
 
@@ -206,6 +206,17 @@ app.get('api/accountbalances', async c => {
 		const accounts = await repo.getAccountBalances()
 		
 		return c.json({ accounts: accounts, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
+app.get('api/allocations', async c => {
+	try {
+		const repo = new Repository(new AllocationModel(c.env.DB))
+		const result = await repo.getAllocations()
+		
+		return c.json({ allocations: result, ok: true })
 	} catch (e) {
 		return c.json({err: e}, 500)
 	}

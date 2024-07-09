@@ -24,6 +24,22 @@ INSERT INTO budgets (title, date_created, date_modified) VALUES ('Grocery', DATE
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Rent/Mortgage', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Transportation/Fuel', DATE('now'), DATE('now'));
 
+-- Budget allocations table
+
+DROP TABLE IF EXISTS allocations;
+CREATE TABLE IF NOT EXISTS allocations (
+  allocation_id integer PRIMARY KEY AUTOINCREMENT,
+  budget_id integer,
+  budget_month text NOT NULL,
+  amount decimal(10, 2) DEFAULT 0 NOT NULL,
+  date_created date,
+  date_modified date
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_alloctions_budget_month ON allocations(budget_id, budget_month);
+
+INSERT INTO allocations (budget_id, budget_month, amount, date_created) VALUES (5, '2-2024', 200, DATE('now'));
+INSERT INTO allocations (budget_id, budget_month, amount, date_created) VALUES (3, '1-2024', 300, DATE('now'));
+
 -- Accounts table
 
 DROP TABLE IF EXISTS accounts;
@@ -61,6 +77,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY(account_id) REFERENCES accounts(account_id)
 );
 
+INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (5, 2, 500, 0, '1-2024', DATE('now'), '1/2/2024');
 INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 500, 0, '1-2024', DATE('now'), '1/3/2024');
 INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 500, 0, '1-2024', DATE('now'), '1/5/2024');
 INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 0, 200, '1-2024', DATE('now'), '1/15/2024');
@@ -70,22 +87,5 @@ INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, da
 INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 100, 0, '6-2024', DATE('now'), '6/23/2024');
 INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (3, 1, 0, 400, '1-2024', DATE('now'), '1/31/2024');
 INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (3, 1, 100, 0, '2-2024', DATE('now'), '2/14/2024');
-
-
--- Budget snapshots table
-
-DROP TABLE IF EXISTS snapshots;
-CREATE TABLE IF NOT EXISTS snapshots (
-  snapshot_id integer PRIMARY KEY AUTOINCREMENT,
-  budget_id integer,
-  budget_month text NOT NULL,
-  assigned decimal(10, 2) NOT NULL,
-  available decimal(10, 2) NOT NULL,
-  date_created date,
-  date_modified date
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_snapshots_budget_id ON snapshots(budget_id, budget_month);
-
--- INSERT INTO snapshots (budget_id, account_id, budget_month, assigned, available, date_created, date_modified) VALUES (2, 2, '4/2024', 1000, 900, DATE('now'), DATE('now'));
 
 PRAGMA defer_foreign_keys = off;
