@@ -11,7 +11,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { AccountModel, AllocationModel, BudgetModel, SnapshotModel, TransactionModel } from './model'
-import { Repository, Budget, Account, Transaction } from './repository'
+import { Repository, Budget, Account, Transaction, Allocation } from './repository'
 import { Env } from './bindings'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -217,6 +217,30 @@ app.get('api/allocations', async c => {
 		const result = await repo.getAllocations()
 		
 		return c.json({ allocations: result, ok: true })
+	} catch (e) {
+		return c.json({err: e}, 500)
+	}
+})
+
+app.post('api/allocations', async c => {
+	const { from, to, month, assigned } = await c.req.json()
+
+    const allocation: Allocation = {
+        from: from,
+        to: to,
+        month: month,
+        assigned: assigned
+    }
+
+	try {		
+		const repo = new Repository(new AllocationModel(c.env.DB))
+		let result = await repo.createAllocation(allocation)
+
+		if (!result) {
+			return c.json({ ok: false, error: "Something went wrong" }, 422)
+		}
+		
+		return c.json({ ok: true, allocation: result }, 201)
 	} catch (e) {
 		return c.json({err: e}, 500)
 	}

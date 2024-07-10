@@ -99,15 +99,65 @@ export class BudgetModel implements BudgetModelInterface {
         try {
             const { results } = await this.db.prepare(`
                 SELECT 
-                    transaction_id,
-                    budget_id,
-                    budget_month,
-                    (SELECT a.amount FROM allocations AS a WHERE a.budget_id = transactions.budget_id AND a.budget_month = budget_month) AS assigned,
-                    SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
+                    a.budget_id,
+                    a.budget_month,
+                    SUM(a.debit - a.credit) AS assigned,
+                    (
+                        SUM(
+                            SUM(a.debit - a.credit)
+                                +
+                            (
+                                SELECT
+                                    SUM(debit - credit)
+                                FROM
+                                    transactions
+                                WHERE
+                                    transactions.budget_id = a.budget_id AND transactions.budget_month = a.budget_month
+                                GROUP BY
+                                    budget_month, budget_id
+                            )
+                        ) OVER (PARTITION BY a.budget_id ORDER BY a.budget_month)
+                    ) AS available
                 FROM
-                    transactions
-                GROUP BY budget_month, budget_id ORDER BY budget_id
+                    allocations AS a
+                GROUP BY a.budget_month, a.budget_id ORDER BY a.budget_id
             `).all<BudgetBalance>()
+
+            // const { results } = await this.db.prepare(`
+            //     SELECT 
+            //         t.transaction_id,
+            //         t.budget_id,
+            //         t.budget_month,
+            //         (
+            //             SELECT
+            //                 SUM(debit - credit)
+            //             FROM
+            //                 allocations
+            //             WHERE
+            //                 allocations.budget_id = t.budget_id AND allocations.budget_month = t.budget_month
+            //             GROUP BY
+            //                 budget_month, budget_id
+            //         ) AS assigned,
+            //         (
+            //             SUM(
+            //                 SUM(t.debit - t.credit)
+            //                     +
+            //                 (
+            //                     SELECT
+            //                         SUM(debit - credit)
+            //                     FROM
+            //                         allocations
+            //                     WHERE
+            //                         allocations.budget_id = t.budget_id AND allocations.budget_month = t.budget_month
+            //                     GROUP BY
+            //                         budget_month, budget_id
+            //                 )
+            //             ) OVER (PARTITION BY t.budget_id ORDER BY t.budget_month)
+            //         ) AS available
+            //     FROM
+            //         transactions AS t
+            //     GROUP BY t.budget_month, t.budget_id ORDER BY t.budget_id
+            // `).all<BudgetBalance>()
 
             result = results
         } catch (e) {
@@ -125,8 +175,15 @@ export class AllocationModel implements AllocationModelInterface {
         let result: Budget[] = []
 
         try {
+            // @todo deprecated query
             const { results } = await this.db.prepare(`
-                SELECT * FROM allocations
+                SELECT
+                    allocation_id, budget_id, budget_month,
+                    SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
+                FROM
+                    allocations
+                GROUP BY
+                    budget_month, budget_id
             `)
                 .all<Allocation>()
     
@@ -138,21 +195,28 @@ export class AllocationModel implements AllocationModelInterface {
         return result
     }
     
-    async create(allocation: Allocation): Promise<Allocation | false> {
-        const now = new Date().toISOString()
+    async create(allocation: Allocation): Promise<boolean> {
+        const now = new Date().toLocaleDateString("en-US")
 
-        const { success, meta } = await this.db.prepare(`
-            INSERT INTO allocations (budget_id, budget_month, amount date_created, date_modified) VALUES (?, ?, ?, ?)
-        `)
-            .bind(allocation.budget_id, allocation.budget_month, allocation.amount, now)
-            .run()
+        let result: boolean = false
 
-        if (success) {
-            allocation.allocation_id = meta.last_row_id
-            return allocation
-        } else {
-            return false
+        try {
+            // Debit
+            const rows = await this.db.batch([
+                this.db.prepare(`
+                    INSERT INTO allocations (budget_id, budget_month, debit, date_created) VALUES (?, ?, ?, ?)
+                `).bind(allocation.to, allocation.month, allocation.assigned, now),
+                this.db.prepare(`
+                    INSERT INTO allocations (budget_id, budget_month, credit, date_created) VALUES (?, ?, ?, ?)
+                `).bind(allocation.from, allocation.month, allocation.assigned, now)
+            ])
+
+            result = true
+        } catch (e) {
+            console.error(e)
         }
+
+        return result
     }
 
     async update(allocation: Allocation): Promise<boolean> {

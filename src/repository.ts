@@ -127,6 +127,10 @@ export class Repository {
         return this.model.fetchAccountBalances()
     }
 
+    public createAllocation(allocation: Allocation): Promise<Allocation | false> {
+        return this.model.create(allocation)
+    }
+
     public getAllocations(): Promise<Allocation[]> {
         return this.model.findAll()
     }
