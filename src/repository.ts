@@ -135,18 +135,8 @@ export class Repository {
         return this.model.findAll()
     }
 
-    public getTransactionsByType(type, id): Promise<Transaction[]> {
-        let filter
-
-        if (type == 'transaction') {
-            filter = { id: id }
-        } else if (type == 'budget') {
-            filter = { budget_id: id }
-        }  else if (type == 'account') {
-            filter = { account_id: id }
-        }
-
-        return this.model.findBy(filter);
+    public getTransactionsByType(type: string, id: number, month: string): Promise<Transaction[]> {
+        return this.model.findBy({ type: type, id: id, month: month });
     }
 
     public getTransaction(id: number): Promise<Transaction | null> {

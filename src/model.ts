@@ -106,7 +106,7 @@ export class BudgetModel implements BudgetModelInterface {
                         SUM(
                             SUM(a.debit - a.credit)
                                 +
-                            (
+                            IFNULL((
                                 SELECT
                                     SUM(debit - credit)
                                 FROM
@@ -115,7 +115,7 @@ export class BudgetModel implements BudgetModelInterface {
                                     transactions.budget_id = a.budget_id AND transactions.budget_month = a.budget_month
                                 GROUP BY
                                     budget_month, budget_id
-                            )
+                            ), 0)
                         ) OVER (PARTITION BY a.budget_id ORDER BY a.budget_month)
                     ) AS available
                 FROM
@@ -476,29 +476,50 @@ export class TransactionModel implements TransactionModelInterface {
         return result
     }
     
-    async findBy(filter: { id: number, budget_id: number, account_id: number }): Promise<Transaction[]> {
+    async findBy(filter: { type: string, id: number, month: string }): Promise<Transaction[]> {
         try {
-            let stmt
+            let sql: string = ''
+            let stmt: D1PreparedStatement = <D1PreparedStatement>{}
 
-            if (filter.id) {
-                stmt = this.db.prepare(`
-                    SELECT * FROM transactions WHERE transaction_id = ?
-                `).bind(filter.id)
-            }
-            
-            if (filter.budget_id) {
-                stmt = this.db.prepare(`
-                    SELECT * FROM transactions WHERE budget_id = ?
-                `).bind(filter.budget_id)
-            }
-            
-            if (filter.account_id) {
-                stmt = this.db.prepare(`
-                    SELECT t.*, b.title AS budget_title FROM transactions AS t
-                    LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
-                    WHERE t.account_id = ?
-                    ORDER BY t.transaction_date DESC
-                `).bind(filter.account_id)
+            switch (filter.type) {
+                case 'transaction':
+                    stmt = this.db.prepare(`SELECT t.* FROM transactions AS t WHERE t.transaction_id = ?1`)
+                        .bind(filter.id)
+                break
+                    
+                case 'budget':
+                    sql = `
+                        SELECT t.*, b.title AS budget_title, a.title AS account_title
+                        FROM transactions AS t
+                        LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
+                        LEFT JOIN accounts AS a ON a.account_id = t.account_id
+                        WHERE t.budget_id = ?1
+                    `
+
+                    if (filter.month) {
+                        sql += ` AND t.budget_month = ?2 ORDER BY t.transaction_date DESC LIMIT 100`
+                        stmt = this.db.prepare(sql).bind(filter.id, filter.month)
+                    } else {
+                        sql += ` ORDER BY t.transaction_date DESC LIMIT 100`
+                        stmt = this.db.prepare(sql).bind(filter.id)
+                    }
+                break
+                
+                case 'account':
+                    sql = `
+                        SELECT t.*, b.title AS budget_title FROM transactions AS t
+                        LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
+                        WHERE t.account_id = ?1
+                    `
+
+                    if (filter.month) {
+                        sql += ` AND t.budget_month = ?2 ORDER BY t.transaction_date DESC LIMIT 100`
+                        stmt = this.db.prepare(sql).bind(filter.id, filter.month)
+                    } else {
+                        sql += ` ORDER BY t.transaction_date DESC LIMIT 100`
+                        stmt = this.db.prepare(sql).bind(filter.id)
+                    }
+                break
             }
 
             const { results } = await stmt.all<Transaction>()

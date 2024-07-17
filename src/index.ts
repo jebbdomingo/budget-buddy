@@ -259,12 +259,13 @@ app.get('api/transactions/:id', async c => {
 	}
 })
 
-app.get('api/transactions/filter/:type/:id', async c => {
+app.get('api/transactions/filter/:type/:id/:month?', async c => {
 	try {
-        const type: any = c.req.param('type')
-        const id: any = c.req.param('id')
+        const type: string = c.req.param('type')
+        const id: string = c.req.param('id')
+        const month: string = c.req.param('month')
 		const repo = new Repository(new TransactionModel(c.env.DB))
-		const result = await repo.getTransactionsByType(type, id)
+		const result = await repo.getTransactionsByType(type, id, month)
 		
 		return c.json({ transactions: result, ok: true })
 	} catch (e) {
