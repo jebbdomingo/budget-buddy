@@ -100,7 +100,7 @@ export class BudgetModel implements BudgetModelInterface {
             const { results } = await this.db.prepare(`
                 SELECT 
                     a.budget_id,
-                    a.budget_month,
+                    ba.budget_month,
                     SUM(a.debit - a.credit) AS assigned,
                     (
                         SUM(
@@ -112,15 +112,17 @@ export class BudgetModel implements BudgetModelInterface {
                                 FROM
                                     transactions
                                 WHERE
-                                    transactions.budget_id = a.budget_id AND transactions.budget_month = a.budget_month
+                                    transactions.budget_id = a.budget_id AND transactions.budget_month = ba.budget_month
                                 GROUP BY
                                     budget_month, budget_id
                             ), 0)
-                        ) OVER (PARTITION BY a.budget_id ORDER BY a.budget_month)
+                        ) OVER (PARTITION BY a.budget_id ORDER BY ba.budget_month)
                     ) AS available
                 FROM
                     allocations AS a
-                GROUP BY a.budget_month, a.budget_id ORDER BY a.budget_id
+                INNER JOIN
+                    budget_allocations AS ba ON ba.budget_allocation_id = a.budget_allocation_id
+                GROUP BY ba.budget_month, a.budget_id ORDER BY a.budget_id
             `).all<BudgetBalance>()
 
             // const { results } = await this.db.prepare(`
@@ -172,18 +174,26 @@ export class AllocationModel implements AllocationModelInterface {
     constructor(private db: D1Database) {}
 
     async findAll(): Promise<Allocation[]> {
-        let result: Budget[] = []
+        let result: Allocation[] = []
 
         try {
-            // @todo deprecated query
             const { results } = await this.db.prepare(`
-                SELECT
-                    allocation_id, budget_id, budget_month,
-                    SUM(SUM(debit - credit)) OVER (PARTITION BY budget_id ORDER BY budget_month) AS available
-                FROM
-                    allocations
-                GROUP BY
-                    budget_month, budget_id
+                SELECT ba.budget_allocation_id, ba.budget_month, ba.transaction_date, budget_debited, budget_credited,  budget_debited_id, budget_credited_id, debit, credit
+                FROM (
+                    SELECT budget_allocation_id AS dr_id, b.title  AS budget_debited, debit, b.budget_id AS budget_debited_id FROM allocations
+                    INNER JOIN budgets AS b ON b. budget_id = allocations.budget_id
+                    WHERE debit != 0
+                ) AS a
+                LEFT JOIN (
+                    SELECT budget_allocation_id AS cr_id, b.title AS budget_credited, credit, b.budget_id AS budget_credited_id FROM allocations
+                    INNER JOIN budgets AS b ON b. budget_id = allocations.budget_id
+                    WHERE credit != 0
+                ) AS b
+                ON  a.dr_id = b.cr_id
+                INNER JOIN
+                    budget_allocations AS ba ON ba.budget_allocation_id = dr_id
+                ORDER BY
+                    ba.budget_month DESC, ba.transaction_date DESC
             `)
                 .all<Allocation>()
     
@@ -201,17 +211,27 @@ export class AllocationModel implements AllocationModelInterface {
         let result: boolean = false
 
         try {
-            // Debit
-            const rows = await this.db.batch([
-                this.db.prepare(`
-                    INSERT INTO allocations (budget_id, budget_month, debit, date_created) VALUES (?, ?, ?, ?)
-                `).bind(allocation.to, allocation.month, allocation.assigned, now),
-                this.db.prepare(`
-                    INSERT INTO allocations (budget_id, budget_month, credit, date_created) VALUES (?, ?, ?, ?)
-                `).bind(allocation.from, allocation.month, allocation.assigned, now)
-            ])
+            const { success, meta } = await this.db.prepare(`
+                INSERT INTO bubdget_allocations (budget_month, date_created) VALUES (?, ?)
+            `)
+                .bind(allocation.month, now)
+                .run()
 
-            result = true
+            if (success) {
+                const budget_allocation_id = meta.last_row_id
+
+                // Debit
+                const rows = await this.db.batch([
+                    this.db.prepare(`
+                        INSERT INTO allocations (budget_allocation_id, budget_id, budget_month, debit, date_created) VALUES (?, ?, ?, ?)
+                    `).bind(budget_allocation_id, allocation.to, allocation.month, allocation.assigned, now),
+                    this.db.prepare(`
+                        INSERT INTO allocations (budget_allocation_id, budget_id, budget_month, credit, date_created) VALUES (?, ?, ?, ?)
+                    `).bind(budget_allocation_id, allocation.from, allocation.month, allocation.assigned, now)
+                ])
+
+                result = true
+            }
         } catch (e) {
             console.error(e)
         }
