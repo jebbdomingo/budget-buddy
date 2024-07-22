@@ -223,12 +223,13 @@ app.get('api/allocations', async c => {
 })
 
 app.post('api/allocations', async c => {
-	const { from, to, month, assigned } = await c.req.json()
+	const { from, to, month, transaction_date, assigned } = await c.req.json()
 
     const allocation: Allocation = {
         from: from,
         to: to,
         month: month,
+        transaction_date: transaction_date,
         assigned: assigned
     }
 

@@ -212,9 +212,9 @@ export class AllocationModel implements AllocationModelInterface {
 
         try {
             const { success, meta } = await this.db.prepare(`
-                INSERT INTO bubdget_allocations (budget_month, date_created) VALUES (?, ?)
+                INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES (?, ?, ?)
             `)
-                .bind(allocation.month, now)
+                .bind(allocation.month, allocation.transaction_date, now)
                 .run()
 
             if (success) {
@@ -223,11 +223,11 @@ export class AllocationModel implements AllocationModelInterface {
                 // Debit
                 const rows = await this.db.batch([
                     this.db.prepare(`
-                        INSERT INTO allocations (budget_allocation_id, budget_id, budget_month, debit, date_created) VALUES (?, ?, ?, ?)
-                    `).bind(budget_allocation_id, allocation.to, allocation.month, allocation.assigned, now),
+                        INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (?, ?, ?, ?)
+                    `).bind(budget_allocation_id, allocation.to, allocation.assigned, now),
                     this.db.prepare(`
-                        INSERT INTO allocations (budget_allocation_id, budget_id, budget_month, credit, date_created) VALUES (?, ?, ?, ?)
-                    `).bind(budget_allocation_id, allocation.from, allocation.month, allocation.assigned, now)
+                        INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (?, ?, ?, ?)
+                    `).bind(budget_allocation_id, allocation.from, allocation.assigned, now)
                 ])
 
                 result = true
