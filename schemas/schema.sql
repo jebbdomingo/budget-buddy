@@ -16,11 +16,9 @@ CREATE INDEX idx_budgets_title ON budgets (title);
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Ready to Assign', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Savings', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Emergency Fund', DATE('now'), DATE('now'));
-INSERT INTO budgets (title, date_created, date_modified) VALUES ('Stewardship', DATE('now'), DATE('now'));
-INSERT INTO budgets (title, date_created, date_modified) VALUES ('Welfare Fund', DATE('now'), DATE('now'));
-INSERT INTO budgets (title, date_created, date_modified) VALUES ('Medical', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Retirement', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Grocery', DATE('now'), DATE('now'));
+INSERT INTO budgets (title, date_created, date_modified) VALUES ('Medical', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Rent/Mortgage', DATE('now'), DATE('now'));
 INSERT INTO budgets (title, date_created, date_modified) VALUES ('Transportation/Fuel', DATE('now'), DATE('now'));
 
@@ -49,26 +47,13 @@ CREATE TABLE IF NOT EXISTS allocations (
 );
 
 INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES ('1-2024', '1/2/2024', DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (1, 2, 200, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (1, 1, 200, DATE('now'));
+INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (1, 5, 5000, DATE('now'));
+INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (1, 1, 5000, DATE('now'));
 
-INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES ('2-2024', '2/5/2024', DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (2, 3, 300, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (2, 1, 300, DATE('now'));
-
-INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES ('2-2024', '2/12/2024', DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (3, 3, 10, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (3, 4, 10, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (3, 1, 20, DATE('now'));
-
-INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES ('3-2024', '3/25/2024', DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (4, 2, 100, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (4, 3, 100, DATE('now'));
-
-INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES ('4-2024', '4/30/2024', DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (5, 2, 100, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (5, 4, 50, DATE('now'));
-INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (5, 3, 150, DATE('now'));
+INSERT INTO budget_allocations (budget_month, transaction_date, date_created) VALUES ('1-2024', '1/5/2024', DATE('now'));
+INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (2, 3, 1000, DATE('now'));
+INSERT INTO allocations (budget_allocation_id, budget_id, debit, date_created) VALUES (2, 7, 1000, DATE('now'));
+INSERT INTO allocations (budget_allocation_id, budget_id, credit, date_created) VALUES (2, 1, 2000, DATE('now'));
 
 -- Accounts table
 
@@ -107,18 +92,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY(account_id) REFERENCES accounts(account_id)
 );
 
-INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (3, 2, 50, '1-2024', DATE('now'), '1/2/2024');
-INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (3, 2, 50, '2-2024', DATE('now'), '2/2/2024');
-
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (5, 2, 500, 0, '1-2024', DATE('now'), '1/2/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 500, 0, '1-2024', DATE('now'), '1/3/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 500, 0, '1-2024', DATE('now'), '1/5/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 0, 200, '1-2024', DATE('now'), '1/15/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 200, 0, '2-2024', DATE('now'), '2/20/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 800, 0, '3-2024', DATE('now'), '3/1/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 200, 0, '4-2024', DATE('now'), '4/22/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (2, 1, 100, 0, '6-2024', DATE('now'), '6/23/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (3, 1, 0, 400, '1-2024', DATE('now'), '1/31/2024');
--- INSERT INTO transactions (budget_id, account_id, debit, credit, budget_month, date_created, transaction_date) VALUES (3, 1, 100, 0, '2-2024', DATE('now'), '2/14/2024');
+INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (1, 2, 10000, '1-2024', DATE('now'), '1/2/2024');
+INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (4, 2, 5000, '1-2024', DATE('now'), '1/2/2024');
+INSERT INTO transactions (budget_id, account_id, credit, budget_month, date_created, transaction_date) VALUES (5, 2, 2000, '2-2024', DATE('now'), '2/15/2024');
+INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (1, 2, 10000, '3-2024', DATE('now'), '3/3/2024');
 
 PRAGMA defer_foreign_keys = off;
