@@ -8,4 +8,9 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "budget-buddy"
-database_id = "65f6ff1d-a2cd-49c1-b588-ff90ac3d47b5"
+
+# Local
+# database_id = "65f6ff1d-a2cd-49c1-b588-ff90ac3d47b5"
+
+# Production
+database_id = "7537c728-403a-42b7-a011-df375f9273b9"

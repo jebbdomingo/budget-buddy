@@ -92,9 +92,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY(account_id) REFERENCES accounts(account_id)
 );
 
-INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (1, 2, 10000, '1-2024', DATE('now'), '1/2/2024');
-INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (4, 2, 5000, '1-2024', DATE('now'), '1/2/2024');
-INSERT INTO transactions (budget_id, account_id, credit, budget_month, date_created, transaction_date) VALUES (5, 2, 2000, '2-2024', DATE('now'), '2/15/2024');
-INSERT INTO transactions (budget_id, account_id, debit, budget_month, date_created, transaction_date) VALUES (1, 2, 10000, '3-2024', DATE('now'), '3/3/2024');
+INSERT INTO transactions (budget_id, account_id, payee, memo, debit, budget_month, date_created, transaction_date) VALUES (1, 2, 'Paycheck 1', 'Foo', 10000, '1-2024', DATE('now'), '1/2/2024');
+INSERT INTO transactions (budget_id, account_id, payee, memo, debit, budget_month, date_created, transaction_date) VALUES (4, 2, 'Insular', 'Funding for retirement', 5000, '1-2024', DATE('now'), '1/2/2024');
+INSERT INTO transactions (budget_id, account_id, payee, memo, credit, budget_month, date_created, transaction_date) VALUES (5, 2, 'Waltermart', 'Monthly grocery', 2000, '2-2024', DATE('now'), '2/15/2024');
+INSERT INTO transactions (budget_id, account_id, payee, memo, debit, budget_month, date_created, transaction_date) VALUES (1, 2, 'Pacheck 2', 'Bar', 10000, '3-2024', DATE('now'), '3/3/2024');
 
 PRAGMA defer_foreign_keys = off;
