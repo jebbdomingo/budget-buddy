@@ -503,7 +503,7 @@ export class TransactionModel implements TransactionModelInterface {
 
             switch (filter.type) {
                 case 'transaction':
-                    stmt = this.db.prepare(`SELECT t.* FROM transactions AS t WHERE t.transaction_id = ?1`)
+                    stmt = this.db.prepare(`SELECT t.* FROM transactions AS t WHERE t.transaction_id = ?1 AND t.archived = 0`)
                         .bind(filter.id)
                 break
                     
@@ -513,7 +513,7 @@ export class TransactionModel implements TransactionModelInterface {
                         FROM transactions AS t
                         LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
                         LEFT JOIN accounts AS a ON a.account_id = t.account_id
-                        WHERE t.budget_id = ?1
+                        WHERE t.budget_id = ?1 AND t.archived = 0
                     `
 
                     if (filter.month) {
@@ -529,7 +529,7 @@ export class TransactionModel implements TransactionModelInterface {
                     sql = `
                         SELECT t.*, b.title AS budget_title FROM transactions AS t
                         LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
-                        WHERE t.account_id = ?1
+                        WHERE t.account_id = ?1 AND t.archived = 0
                     `
 
                     if (filter.month) {
@@ -554,7 +554,11 @@ export class TransactionModel implements TransactionModelInterface {
 
         try {
             const { results } = await this.db.prepare(`
-                SELECT * FROM transactions WHERE archived = 0
+                SELECT t.*, b.title AS budget_title, a.title AS account_title
+                FROM transactions AS t
+                LEFT JOIN budgets AS b ON b.budget_id = t.budget_id
+                LEFT JOIN accounts AS a ON a.account_id = t.account_id
+                WHERE t.archived = 0
             `)
                 .all<Transaction>()
     
